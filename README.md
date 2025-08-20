@@ -1,6 +1,8 @@
-# HOMER
+# Iterative HOMER with Uncertainties
 
-A re-implementation of the HOMER method for reweighting hadronization histories [[2410.06342]](https://arxiv.org/abs/2410.06342). The original codebase, which includes data generation scripts can be found at the [MLHad GitLab](https://gitlab.com/uchep/mlhad/-/tree/master/HOMER?ref_type=heads).
+An implementation of the HOMER method for reweighting hadronization histories [[2410.06342]](https://arxiv.org/abs/2410.06342), including iterations and learned uncertainties. The original codebase, which contains data generation scripts can be found at the [MLHad GitLab](https://gitlab.com/uchep/mlhad/-/tree/master/HOMER?ref_type=heads).
+
+**Cite:**
 
 ## Getting started
 - Clone the repository
@@ -12,7 +14,7 @@ conda env create -f env.yaml
 ## Basic usage
 This project uses [Hydra](https://hydra.cc/docs/intro/) to configure experiments. The default settings are given in `config/default.yaml` and each can be overridden via the command line.
 
-The script `homer.py` is used to run experiments, which typically consist of training/evaluating a model and making plots. The all-in-one `IterativeExperiment` runs steps 1 and 2 of the HOMER method in iterations. To launch the experiment with default settings, simply use:
+The script `homer.py` is used to run experiments, which typically consist of training/evaluating a model, as well as making plots. The all-in-one `IterativeExperiment` runs steps 1 and 2 of the HOMER method in iterations. To launch the experiment with default settings, simply use:
 ```
 python homer.py -cn iterative
 ```
@@ -22,7 +24,7 @@ Experiment settings can be adjusted from the command line. For example, to set t
 ```
 python homer.py -cn iterative iterations=3
 ```
-Each step of Homer can also be run in isolation:
+Each step of HOMER can also be run in isolation:
 ```
 python homer.py -cn step_one/hl
 ```
@@ -30,12 +32,6 @@ The second step requires you to specify the location of a step-one classifier:
 ```
 python homer.py -cn step_two/deterministic w_class_path=/path/to/step/one/exp
 ```
-
-<!-- The following is a description of the two main experiments:
-| Experiment name | Description | Compatible networks |
-| :-------- | :------- | :------- |
-| `step_one` | Trains a network in a self-supervised manner in order to learn informative lightcone summaries. | `vit` |
-| `step_two` | Trains a network to predict simulation parameters given a light cone. The model performance is measured in terms of a normalized -->
 
 ## Running on a cluster
 Submission options for `slurm` and `pbs` schedulers are integrated. As an example, one can submit a job to slurm (the default option) using
