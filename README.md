@@ -52,8 +52,8 @@ python homer.py prev_exp_dir=/path/to/prev/exp training.warm_start=True
 ```
 - Repeating evaluation and/or plotting using a saved model:
 ```
-python3 homer.py prev_exp_dir=/path/to/prev/exp train=False
-python3 homer.py prev_exp_dir=/path/to/prev/exp train=False evaluate=False 
+python homer.py prev_exp_dir=/path/to/prev/exp train=False
+python homer.py prev_exp_dir=/path/to/prev/exp train=False evaluate=False 
 ```
 The specific configuration will be loaded from the previous experiment. Command line overrides are also applied.
 
