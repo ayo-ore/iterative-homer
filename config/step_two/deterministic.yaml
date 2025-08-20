@@ -1,0 +1,42 @@
+# @package _global_
+defaults:
+  - /default
+  - /net: mlp
+  - /net@net2: mlp
+  - _self_
+
+run_name: step_two_${dataset.name}
+experiment: StepTwoExperiment
+w_class_path: ???
+
+learn_acc: true
+learn_var: false
+smear: false
+smear_kernel_scale: 0.05
+iterate_target: false
+
+model:
+  _target_: src.models.Factorizer
+
+net: # joint net
+  dim_in: 7
+  hidden_channels: 64
+  num_hidden_layers: 3
+  dim_out: 1
+
+net2: # marginal net
+  dim_in: 2
+  dim_out: ${net.dim_out}
+  hidden_channels: ${net.hidden_channels}
+  num_hidden_layers: ${net.num_hidden_layers}
+  act: ${net.act}
+  drop: ${net.drop}
+
+training:
+  lr: 5e-5
+  epochs: 500
+  batch_size: 512
+  patience: 50
+
+data:
+  on_gpu: False

@@ -1,0 +1,29 @@
+# @package _global_
+defaults:
+  - /default
+  - /net: transformer
+  - _self_
+
+run_name: step_one_${dataset.name}_ll
+experiment: StepOneExperiment
+
+loss: bce
+bayesian: false
+
+model:
+  _target_: src.models.Classifier
+
+net:
+  dim_in: 5
+  dim_out: 1
+  bayesian: ${bayesian}
+  
+training:
+  lr: 1e-4
+  epochs: 500
+  batch_size: 256
+  patience: 50
+
+data:
+  on_gpu: false
+

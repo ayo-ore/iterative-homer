@@ -1,0 +1,32 @@
+name: qq
+dir: /remote/gpu02/ore/homer/datasets/qq
+log_acc_exp: -0.20595156
+log_acc_sim: -0.15760603
+preprocessing:
+  hadrons:
+    _target_: src.utils.transforms.HadronObsTransform
+    shift:
+      _target_: torch.tensor
+      data: [9.87e-01, 5.65e-02, 2.17e-03, 1.94e-02, 3.31e-02, 1.45e01, 9.52e00, 2.75e00, 1.79e00, 4.22e-02, 2.73e00, 1.70e00, 4.34e-02]
+    scale:
+      _target_: torch.tensor
+      data: [5.51e-03, 2.26e-02, 1.87e-03, 4.81e-03, 8.03e-03, 3.39e00, 2.89e00, 2.94e-01, 5.29e-01, 1.10e00, 4.23e-01, 6.80e-01, 1.29e00]
+
+  history:
+    _target_: src.utils.transforms.HistoryTransform
+    keep_stringends: False
+    shift:
+      _target_: torch.tensor
+      data: [-6.6713e-01, -3.0095e-05, -2.0509e-05, 0.0, 0.0, -3.0095e-05, -2.0509e-05, 1.1353e+00, 9.0910e-02, 7.6371e-06, 2.6071e-05, 1.2017e-04, 4.6377e+00]
+    scale:
+      _target_: torch.tensor
+      data: [1.3688e+00, 2.3963e-01, 2.3965e-01, 1.0, 1.0, 2.3963e-01, 2.3965e-01, 1.1625e+00, 2.8748e-01, 1.1710e+00, 1.1742e+00, 7.5704e+00, 6.2107e+00]  
+
+  point_cloud:
+    _target_: src.utils.transforms.PointCloudTransform
+    shift:
+      _target_: torch.tensor
+      data: [0.0, 0.0, 0.0, 1.04e00, 0.0]
+    scale:
+      _target_: torch.tensor
+      data: [3.24e-01, 3.24e-01, 9.97e00, 1.32e00, 1.0]

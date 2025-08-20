@@ -1,0 +1,46 @@
+# @package _global_
+defaults:
+  - /default
+  - /net: mlp
+  - /net@net2: mlp
+  - _self_
+
+run_name: step_two_${dataset.name}_unc
+experiment: StepTwoExperiment
+w_class_path: ???
+
+learn_acc: true
+learn_var: true
+smear: false
+smear_kernel_scale: 0.05
+iterate_target: false
+bayesian: false
+num_bnn_samples: 10
+
+model:
+  _target_: src.models.UncertaintiesFactorizer
+
+net: # mean net
+  dim_in: 5
+  hidden_channels: 64
+  num_hidden_layers: 3
+  dim_out: 1
+  bayesian: ${bayesian}
+
+net2: # var net
+  dim_in: 5
+  dim_out: ${net.dim_out}
+  hidden_channels: ${net.hidden_channels}
+  num_hidden_layers: ${net.num_hidden_layers}
+  act: ${net.act}
+  drop: ${net.drop}
+  bayesian: ${bayesian}
+
+training:
+  lr: 3e-4
+  epochs: 1000
+  batch_size: 8192
+  patience: 250
+
+data:
+  on_gpu: False

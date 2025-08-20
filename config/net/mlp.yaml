@@ -1,0 +1,9 @@
+_target_: src.networks.MLP
+dim_in: ???
+dim_out: ???
+hidden_channels: 64
+num_hidden_layers: 1
+act: silu
+out_act: null
+drop: null
+bayesian: false

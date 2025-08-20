@@ -1,0 +1,15 @@
+run_name: iterative_${dataset.name}
+experiment: IterativeExperiment
+
+iterations: 5
+w_class_path: null
+w_prev_path: null
+warm_start_step_two: false
+step_one_lr_decay: null
+step_two_lr_decay: null
+
+defaults:
+  - default
+  - step_one@step_one: hl
+  - step_two@step_two: deterministic
+  - _self_

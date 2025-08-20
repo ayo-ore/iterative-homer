@@ -1,0 +1,34 @@
+run_name: iterative_uncertainties_${dataset.name}
+experiment: IterativeExperiment
+
+iterations: 5
+w_class_path: null
+w_prev_path: null
+warm_start_step_two: false
+step_one_lr_decay: null
+step_two_lr_decay: null
+
+step_one:
+  bayesian: True
+  training:
+    lr: 0.005
+    patience: null
+    batch_size: 8192
+    optimizer:
+      _target_: schedulefree.AdamWScheduleFree
+      weight_decay: 0.0
+
+step_two:
+  iterate_target: false
+  training:
+    lr: 0.001
+    gradient_norm: 5
+    optimizer:
+      _target_: schedulefree.AdamWScheduleFree
+      weight_decay: 0.0
+
+defaults:
+  - homer
+  - override step_one@step_one: hl
+  - override step_two@step_two: uncertainties
+  - _self_

@@ -1,0 +1,30 @@
+# @package _global_
+defaults:
+  - /default
+  - /net: mlp
+  - _self_
+
+run_name: step_one_${dataset.name}_hl
+experiment: StepOneExperiment
+
+loss: bce
+bayesian: false
+
+model:
+  _target_: src.models.Classifier
+
+net:
+  dim_in: 13
+  num_hidden_layers: 2
+  hidden_channels: 32
+  dim_out: 1
+  bayesian: ${bayesian}
+
+training:
+  lr: 1e-4
+  epochs: 500
+  batch_size: 2048
+  patience: 50
+
+data:
+  on_gpu: true

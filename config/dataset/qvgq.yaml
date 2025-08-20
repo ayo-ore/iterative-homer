@@ -1,0 +1,34 @@
+name: qvgq
+dir: /remote/gpu02/ore/homer/datasets/qvgq
+log_acc_exp: -0.14464079
+log_acc_sim: -0.11740335
+preprocessing:
+  hadrons:
+    _target_: src.utils.transforms.HadronObsTransform
+    shift:
+      _target_: torch.tensor
+      data: [0.9454, 0.2183, 0.0252, 0.0707, 0.0904, 19.4937, 12.8254, 3.0007, 1.5824, -0.1477, 2.9933, 1.5298, -0.1302]
+    scale:
+      _target_: torch.tensor
+      data: [0.0533, 0.1672, 0.0310, 0.0516, 0.0534, 4.5318, 3.6695, 0.2712, 0.4163, 0.8544, 0.3602, 0.5372, 1.0146]
+
+  history:
+    _target_: src.utils.transforms.HistoryTransform
+    keep_stringends: False
+    shift:
+      _target_: torch.tensor
+      data: [-6.1873e-01, -3.0095e-05, -2.0509e-05, 0.0, 0.0, 3.4268e-05, 2.6707e-05, 1.1353e+00, 9.0910e-02, 7.6371e-06, 2.6071e-05, 1.2017e-04, 4.6377e+00]
+    scale:
+      _target_: torch.tensor
+      data: [7.9434e+00, 2.3963e-01, 2.3965e-01, 1.0, 1.0, 2.2651e-01, 2.2622e-01, 1.1625e+00, 2.8748e-01, 1.1710e+00, 1.1742e+00, 7.5704e+00, 6.2107e+00]
+
+  point_cloud:
+    _target_: src.utils.transforms.PointCloudTransform
+    shift:
+      _target_: torch.tensor
+      data: [0.0, 0.0, 0.0, 0.7958, 0.0]
+    scale:
+      _target_: torch.tensor
+      data: [1.1733, 1.1756, 7.5490, 1.2377, 1.0]
+
+    
