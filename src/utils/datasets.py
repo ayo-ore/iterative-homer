@@ -10,7 +10,7 @@ KEYS = (
     "observables",
     "breaks",
     "point_cloud",
-    "exact_split_logweights",
+    "exact_break_logweights",
     "history_indices",
     "data_weights",
 )
@@ -24,7 +24,7 @@ class HomerData:
         - "observables"            (N_events, 13):               TODO: Description
         - "breaks"                 (N_events, 100, 13):          TODO: Description
         - "point_cloud"            (N_events, 60, 5):            TODO: Description
-        - "exact_split_logweights" (N_events, 100):              TODO: Description
+        - "exact_break_logweights" (N_events, 100):              TODO: Description
         - "history_indices"        (N_events, 100):              TODO: Description
     The following attributes are placeholders, filled internally by HOMER.
         - "labels"                 (N_events, 1):                TODO: Description
@@ -44,7 +44,7 @@ class HomerData:
     observables:            Optional[torch.Tensor] = None
     breaks:                 Optional[torch.Tensor] = None
     point_cloud:            Optional[torch.Tensor] = None
-    exact_split_logweights: Optional[torch.Tensor] = None
+    exact_break_logweights: Optional[torch.Tensor] = None
     history_indices:        Optional[torch.Tensor] = None
     labels:                 Optional[torch.Tensor] = None
     is_break:               Optional[torch.Tensor] = None
