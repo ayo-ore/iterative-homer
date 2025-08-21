@@ -151,6 +151,6 @@ class BayesianLinear(nn.Module):
             # sample gaussian random numbers
             weight = self.mu_w + s2_w.sqrt() * self.random
             return F.linear(input, weight, self.bias) + 1e-8
-        
+
     def reseed(self):
         self.random = None

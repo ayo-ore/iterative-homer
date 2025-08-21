@@ -11,7 +11,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from src.experiments.training import TrainingExperiment
 from src.utils import plotting
 from src.utils.datasets import HomerData
-from src.utils.utils import get_break_masks, get_last_break_mask
+from src.utils.utils import get_break_masks
 
 
 class StepTwoExperiment(TrainingExperiment):
@@ -19,7 +19,7 @@ class StepTwoExperiment(TrainingExperiment):
     @property
     def iterating(self):
         return self.cfg.w_prev_path is not None
-    
+
     @property
     def with_var(self):
         return "UncertaintiesFactorizer" in self.model.__class__.__name__
@@ -27,9 +27,9 @@ class StepTwoExperiment(TrainingExperiment):
     def init_preprocessing(self):
         self.pcfg = self.cfg.dataset.preprocessing
         self.train_keys = [
-            "hadrons_obs_only",
-            "splits_for_full_hadron_info",
-            "history_indexes",
+            "observables",
+            "splits",
+            "history_indices",
         ]
         preprocessing = [
             instantiate(self.pcfg.hadrons),
@@ -56,9 +56,9 @@ class StepTwoExperiment(TrainingExperiment):
         """
         Calculates a mask indicating if each break is in the nth chain.
         """
-        batch.num_rej = batch.history_indexes.max(1).values
+        batch.num_rej = batch.history_indices.max(1).values
         chain_index = torch.arange(batch.num_rej.max() + 1, device=batch.device)
-        batch.in_chain_n = batch.history_indexes.unsqueeze(-1) == chain_index
+        batch.in_chain_n = batch.history_indices.unsqueeze(-1) == chain_index
         return batch
 
     @torch.inference_mode()
@@ -84,7 +84,7 @@ class StepTwoExperiment(TrainingExperiment):
             for batch in dataloader:
 
                 batch = batch.to(self.device, non_blocking=True)
-                lw = self.model.log_break_weight(batch.splits_for_full_hadron_info)
+                lw = self.model.log_break_weight(batch.breaks)
 
                 if self.with_var:
                     # unpack into mean and variance if heteroscedastic model
@@ -127,8 +127,8 @@ class StepTwoExperiment(TrainingExperiment):
                         kernel_weight = (
                             self.model.smearing_kernel.log_prob(
                                 torch.cdist(
-                                    batch.hadrons_obs_only[[i]],
-                                    batch.hadrons_obs_only,
+                                    batch.observables[[i]],
+                                    batch.observables,
                                 )
                             )
                             .exp()
@@ -193,10 +193,10 @@ class StepTwoExperiment(TrainingExperiment):
         # load test data for histograms
         self.log.info("Loading test data")
         plot_keys = [
-            "hadrons_obs_only",
-            "history_indexes",
-            "splits_for_full_hadron_info",
-            "analytical_per_split_log_weight",
+            "observables",
+            "history_indices",
+            "splits",
+            "exact_split_logweights",
         ]
         exp = HomerData.from_dir(
             path=self.cfg.data.path_exp_test,
@@ -214,7 +214,7 @@ class StepTwoExperiment(TrainingExperiment):
         )
 
         # extract sample weights
-        exp_weights = exp.sample_weights.numpy()
+        exp_weights = exp.data_weights.numpy()
 
         # get masks
         is_break_exp, accepted_exp, in_chain_n_exp = get_break_masks(exp)
@@ -227,19 +227,19 @@ class StepTwoExperiment(TrainingExperiment):
         in_chain_n_sim = in_chain_n_sim.numpy()
 
         # compute exact weights
-        exact_break_weights_exp = exp.analytical_per_split_log_weight.exp().numpy()
-        exact_break_weights_sim = sim.analytical_per_split_log_weight.exp().numpy()
+        exact_break_weights_exp = exp.exact_split_logweights.exp().numpy()
+        exact_break_weights_sim = sim.exact_split_logweights.exp().numpy()
         exact_chain_weights_exp = torch.exp(
-            (exp.analytical_per_split_log_weight * accepted_exp).sum(1)
+            (exp.exact_split_logweights * accepted_exp).sum(1)
         ).numpy()
         exact_chain_weights_sim = torch.exp(
-            (sim.analytical_per_split_log_weight * accepted_sim).sum(1)
+            (sim.exact_split_logweights * accepted_sim).sum(1)
         ).numpy()
         exact_history_weights_exp = torch.exp(
-            (exp.analytical_per_split_log_weight * is_break_exp).sum(1)
+            (exp.exact_split_logweights * is_break_exp).sum(1)
         ).numpy()
         exact_history_weights_sim = torch.exp(
-            (sim.analytical_per_split_log_weight * is_break_sim).sum(1)
+            (sim.exact_split_logweights * is_break_sim).sum(1)
         ).numpy()
         exact_event_weights_exp = exact_chain_weights_exp * np.exp(
             self.cfg.dataset.log_acc_sim - self.cfg.dataset.log_acc_exp
@@ -258,8 +258,8 @@ class StepTwoExperiment(TrainingExperiment):
 
         # plot observables
         self.log.info("Plotting event observables")
-        obs_exp = exp.hadrons_obs_only.nan_to_num().numpy()
-        obs_sim = sim.hadrons_obs_only.nan_to_num().numpy()
+        obs_exp = exp.observables.nan_to_num().numpy()
+        obs_sim = sim.observables.nan_to_num().numpy()
         with PdfPages(os.path.join(savedir, f"observables.pdf")) as pdf:
             for i in range(13):
                 fig, ax = plotting.plot_reweighting(
@@ -389,8 +389,8 @@ class StepTwoExperiment(TrainingExperiment):
         # fragmentation
         with PdfPages(os.path.join(savedir, f"fragmentation.pdf")) as pdf:
 
-            frg_exp = exp.splits_for_full_hadron_info.numpy()
-            frg_sim = sim.splits_for_full_hadron_info.numpy()
+            frg_exp = exp.breaks.numpy()
+            frg_sim = sim.breaks.numpy()
 
             # average
             self.log.info("Plotting marginal fragmentation function")
@@ -569,9 +569,9 @@ class StepTwoExperiment(TrainingExperiment):
             #     pdf.savefig(fig)
             #     plt.close(fig)
 
-            # I_exp = exp.history_indexes
-            # I_sim = sim.history_indexes
-            # # TODO: potential problem with accepted n=1 due to updating history_indexes in get_break mask?
+            # I_exp = exp.history_indices
+            # I_sim = sim.history_indices
+            # # TODO: potential problem with accepted n=1 due to updating history_indices in get_break mask?
             # last_break_acc_exp = accepted_exp & get_last_break_mask(I_exp, n=1).numpy()
             # last_break_acc_sim = accepted_sim & get_last_break_mask(I_sim, n=1).numpy()
             # last_break_rej_exp = ~accepted_exp & get_last_break_mask(I_exp, n=1).numpy()

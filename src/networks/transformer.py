@@ -25,8 +25,6 @@ class TransformerEncoder(nn.Module):
         drop_mlp: float = 0.0,
         bayesian: bool = False,
         max_len: int = 100,
-        pos_dim: int = 5
-
     ):
 
         super().__init__()
@@ -60,7 +58,6 @@ class TransformerEncoder(nn.Module):
             ]
         )
         self.out_norm = nn.LayerNorm(hidden_channels)
-        # self.positional_encoding = nn.Embedding(max_len, pos_dim)
 
     def forward(
         self,
@@ -68,20 +65,8 @@ class TransformerEncoder(nn.Module):
         c: Optional[torch.Tensor] = None,
         mask: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        # one_hot = torch.eye(self.max_len, device=x.device, dtype=x.dtype)[
-        #           None, : x.shape[1], :
-        #           ].expand(x.shape[0], -1, -1)
-        # x = torch.cat([x, one_hot], dim=-1)
-        # batch_size, seq_len, _ = x.size()
-        # pos_enc = self.positional_encoding(torch.arange(seq_len, device=x.device))
-        # pos_enc = pos_enc.unsqueeze(0)
-        # pos_enc = pos_enc.expand(batch_size, -1, -1)
-        # if pos_enc.size(-1) != x.size(-1):
-        #     pos_enc = pos_enc.unsqueeze(-1).expand(-1, -1, x.size(-1))
-        #
-        # x = x + pos_enc
-        x = self.proj_in(x)
 
+        x = self.proj_in(x)
 
         if self.conditional:
             # append condition as token

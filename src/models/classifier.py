@@ -24,14 +24,14 @@ class Classifier(Model):
                 z = sign * logits
                 loss = z + z.exp()
             case "mse":
-                sign = (2 * batch.labels - 1)
+                sign = 2 * batch.labels - 1
                 z = sign * logits
                 loss = (-2 * z).exp() - 2 * z.exp()
             case _:
                 raise ValueError
 
-        if batch.sample_weights is not None:
-            loss = loss * batch.sample_weights
+        if batch.data_weights is not None:
+            loss = loss * batch.data_weights
 
         if batch.w_ref_event is not None:
             loss = loss * batch.w_ref_event
@@ -49,13 +49,13 @@ class Classifier(Model):
         """Return the event-level data-to-ref log-likelihood ratio"""
 
         if self.lowlevel:
-            # mom = x.splits_for_full_hadron_info[...,9:13]
-            # cond = x.hadrons_obs_only
+            # mom = x.breaks[...,9:13]
+            # cond = x.observables
             # logits = self.net(mom, c=cond, mask=x.accepted)
             had_mask = x.point_cloud[..., -1] != 0
             logits = self.net(x.point_cloud, mask=had_mask)
         else:
-            logits = self.net(x.hadrons_obs_only)
+            logits = self.net(x.observables)
 
         return logits.squeeze(1)
 

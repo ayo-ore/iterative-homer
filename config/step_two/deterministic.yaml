@@ -10,10 +10,10 @@ experiment: StepTwoExperiment
 w_class_path: ???
 
 learn_acc: true
-learn_var: false
 smear: false
 smear_kernel_scale: 0.05
 iterate_target: false
+norm_target: true
 
 model:
   _target_: src.models.Factorizer

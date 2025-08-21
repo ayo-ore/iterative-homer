@@ -10,10 +10,10 @@ experiment: StepTwoExperiment
 w_class_path: ???
 
 learn_acc: true
-learn_var: true
 smear: false
 smear_kernel_scale: 0.05
 iterate_target: false
+norm_target: true
 bayesian: false
 num_bnn_samples: 10
 

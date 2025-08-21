@@ -10,10 +10,10 @@ pyplot_cfg = {
     "font.size": 14,
     "font.family": "serif",
     "legend.fontsize": 12,
-    "figure.subplot.top":  0.95,
-    "figure.subplot.bottom":  0.15,
-    "figure.subplot.left":  0.14,
-    "figure.subplot.right":  0.96,
+    "figure.subplot.top": 0.95,
+    "figure.subplot.bottom": 0.15,
+    "figure.subplot.left": 0.14,
+    "figure.subplot.right": 0.96,
     "savefig.pad_inches": 0.1,
     "savefig.dpi": 300,
     "text.usetex": True,
@@ -218,14 +218,18 @@ def plot_reweighting(
     labels = (name_exp, name_sim, *labels_rew)
     # colors = (BLACK, "C0", "C2", "C3", "C4", 'C5')
     # colors = [BLACK, "#1D6A9E", "#ea6702", "#009826"] + [f"C{i}" for i in range(3,8)]
-    colors = [BLACK, "#1D6A9E", "#7E3B91", "#009826"] + [f"C{i}" for i in [1] + list(range(3, 8))]
+    colors = [BLACK, "#1D6A9E", "#7E3B91", "#009826"] + [
+        f"C{i}" for i in [1] + list(range(3, 8))
+    ]
     denom = ys[denom_idx]
     dup_last = lambda a: np.append(a, a[-1])
     legend_objs, legend_labels = [], []
     for y, err, label, color in zip(ys, errs, labels, colors):
-        
+
         if add_chi2:
-            pull = (y/y.sum() - y_exp/y_exp.sum()) / np.sqrt((err/y.sum())**2 + (err_exp/y_exp.sum())**2)
+            pull = (y / y.sum() - y_exp / y_exp.sum()) / np.sqrt(
+                (err / y.sum()) ** 2 + (err_exp / y_exp.sum()) ** 2
+            )
             chi2 = (pull**2).sum() / num_bins
             label += f" ({chi2:.2f})"
 

@@ -53,7 +53,7 @@ class MLP(nn.Module):
     def kld(self):
         if self.bayesian:
             return sum(layer.kld for layer in self.linear_layers)
-    
+
     def reseed(self):
         if self.bayesian:
             for layer in self.linear_layers:

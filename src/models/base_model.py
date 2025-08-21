@@ -8,6 +8,7 @@ from omegaconf import DictConfig
 
 log = logging.getLogger("Model")
 
+
 class Model(nn.Module):
 
     def __init__(self, cfg: DictConfig):
@@ -18,7 +19,7 @@ class Model(nn.Module):
 
         self.bayesian = self.net.bayesian
         if self.bayesian:
-            self.register_buffer('train_size', torch.zeros(()))
+            self.register_buffer("train_size", torch.zeros(()))
 
     @property
     def trainable_parameters(self):
@@ -28,25 +29,25 @@ class Model(nn.Module):
     def kld(self):
         if self.bayesian:
             return self.net.kld
-        
+
     def reseed(self):
         if self.bayesian:
             self.net.reseed()
-        
+
     def update(self, loss, optimizer, scaler, step=None, total_steps=None):
-        
+
         # scale gradients for mixed precision stability
         loss = scaler.scale(loss)
-        
+
         # propagate gradients
         loss.backward()
-        
+
         # optionally clip gradients
         if clip := self.cfg.training.gradient_norm:
             scaler.unscale_(optimizer)
             grad_norm = nn.utils.clip_grad_norm_(self.trainable_parameters, clip)
             self.log_scalar(grad_norm, "gradient_norm")
-        
+
         # update weights
         scaler.step(optimizer)
         scaler.update()
@@ -54,11 +55,11 @@ class Model(nn.Module):
         # zero parameter gradients
         optimizer.zero_grad(set_to_none=True)
 
-    def log_scalar(self, x:torch.Tensor, name:str):
+    def log_scalar(self, x: torch.Tensor, name: str):
         if self.net.training:
             self.log_buffer[name].append(x.detach())
 
-    def load(self, exp_dir:str, device:torch.device):
+    def load(self, exp_dir: str, device: torch.device):
         path = os.path.join(exp_dir, "model.pt")
         state_dicts = torch.load(path, map_location=device, weights_only=False)
         self.load_state_dict(state_dicts["model"])

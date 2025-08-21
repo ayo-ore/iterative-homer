@@ -30,11 +30,11 @@ class HadronObsTransform:
     def forward(self, x):
 
         # set NaNs to zero
-        x.hadrons_obs_only = x.hadrons_obs_only.nan_to_num()
+        x.observables = x.observables.nan_to_num()
 
         # normalize
-        x.hadrons_obs_only = ShiftAndScale.forward(
-            x.hadrons_obs_only, shift=self.shift, scale=self.scale
+        x.observables = ShiftAndScale.forward(
+            x.observables, shift=self.shift, scale=self.scale
         )
 
         return x
@@ -42,8 +42,8 @@ class HadronObsTransform:
     def reverse(self, x):
 
         # unnormalize
-        x.hadrons_obs_only = ShiftAndScale.reverse(
-            x.hadrons_obs_only, shift=self.shift, scale=self.scale
+        x.observables = ShiftAndScale.reverse(
+            x.observables, shift=self.shift, scale=self.scale
         )
         return x
 
@@ -81,7 +81,7 @@ class HistoryTransform:
 
     def forward(self, x):
 
-        # y = x.splits_for_full_hadron_info.clone()
+        # y = x.breaks.clone()
 
         # add masks
         x.is_break, x.accepted, _ = get_break_masks(
@@ -89,58 +89,42 @@ class HistoryTransform:
         )
 
         # convert masses to classes
-        x.splits_for_full_hadron_info[..., 3] = self.mass_transform.forward(
-            x.splits_for_full_hadron_info[..., 3]
-        )
+        x.breaks[..., 3] = self.mass_transform.forward(x.breaks[..., 3])
 
         # logit transform momentum fractions
-        x.splits_for_full_hadron_info[..., 0] = torch.logit(
-            x.splits_for_full_hadron_info[..., 0] * (1 - 2 * self.eps) + self.eps
-        )
+        x.breaks[..., 0] = torch.logit(x.breaks[..., 0] * (1 - 2 * self.eps) + self.eps)
 
         # normalize
-        x.splits_for_full_hadron_info = ShiftAndScale.forward(
-            x.splits_for_full_hadron_info, shift=self.shift, scale=self.scale
-        )
+        x.breaks = ShiftAndScale.forward(x.breaks, shift=self.shift, scale=self.scale)
 
         # permute feature order: frompos, mass, delta_pT, z, pT_string
-        x.splits_for_full_hadron_info = x.splits_for_full_hadron_info[
-            ..., self.permutation
-        ]
+        x.breaks = x.breaks[..., self.permutation]
 
         return x
 
     def reverse(self, x):
 
-        # y = x.splits_for_full_hadron_info.clone()
+        # y = x.breaks.clone()
 
         # create accepted mask
-        x.accepted = (x.splits_for_full_hadron_info != 0).any(-1)
+        x.accepted = (x.breaks != 0).any(-1)
 
         # undo permutation
-        x.splits_for_full_hadron_info = x.splits_for_full_hadron_info[
-            ..., self.permutation.argsort()
-        ]
+        x.breaks = x.breaks[..., self.permutation.argsort()]
 
         # unnormalize
-        x.splits_for_full_hadron_info = ShiftAndScale.reverse(
-            x.splits_for_full_hadron_info, shift=self.shift, scale=self.scale
-        )
+        x.breaks = ShiftAndScale.reverse(x.breaks, shift=self.shift, scale=self.scale)
 
         # restore momentum fractions
-        x.splits_for_full_hadron_info[..., 0] = (
-            x.splits_for_full_hadron_info[..., 0].sigmoid() - self.eps
-        ) / (1 - 2 * self.eps)
+        x.breaks[..., 0] = (x.breaks[..., 0].sigmoid() - self.eps) / (1 - 2 * self.eps)
 
         # restore masses from classes
-        x.splits_for_full_hadron_info[..., 3] = self.mass_transform.reverse(
-            x.splits_for_full_hadron_info[..., 3]
-        )
+        x.breaks[..., 3] = self.mass_transform.reverse(x.breaks[..., 3])
 
         # re-enforce mask
-        x.splits_for_full_hadron_info[~x.accepted] = 0.0
+        x.breaks[~x.accepted] = 0.0
 
-        # x.splits_for_full_hadron_info = y
+        # x.breaks = y
 
         return x
 

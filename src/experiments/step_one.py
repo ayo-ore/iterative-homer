@@ -29,7 +29,7 @@ class StepOneExperiment(TrainingExperiment):
             self.train_keys = ["point_cloud"]
             preprocessing = [instantiate(pcfg.point_cloud)]
         else:
-            self.train_keys = ["hadrons_obs_only"]
+            self.train_keys = ["observables"]
             preprocessing = [instantiate(pcfg.hadrons)]
 
         return preprocessing
@@ -48,6 +48,10 @@ class StepOneExperiment(TrainingExperiment):
             )
             for p in (path_exp, path_sim)
         ]
+
+        if dset_sim.w_ref_event is not None:
+            # normalize reference weights
+            dset_sim.w_ref_event /= dset_sim.w_ref_event.mean()
 
         # stack inputs
         dset = torch.cat([dset_exp, dset_sim], dim=0).to(self.dtype)
@@ -112,10 +116,10 @@ class StepOneExperiment(TrainingExperiment):
         # load test data for histograms
         self.log.info("Loading test data")
         plot_keys = [
-            "hadrons_obs_only",
-            "history_indexes",
-            "splits_for_full_hadron_info",
-            "analytical_per_split_log_weight",
+            "observables",
+            "history_indices",
+            "splits",
+            "exact_split_logweights",
         ]
         exp = HomerData.from_dir(
             path=self.cfg.data.path_exp_test,
@@ -131,7 +135,7 @@ class StepOneExperiment(TrainingExperiment):
         )
 
         # extract sample weights
-        exp_weights = exp.sample_weights.numpy()
+        exp_weights = exp.data_weights.numpy()
 
         # read predicted weights from disk
         self.log.info("Reading predictions from disk")
@@ -140,11 +144,11 @@ class StepOneExperiment(TrainingExperiment):
         w_ref = record["w_ref"] if self.iterating else None
 
         # calculate AUC
-        sample_weight = np.ones(len(labels))
+        data_weight = np.ones(len(labels))
         if exp_weights is not None:
-            sample_weight[labels == 1] = exp_weights
+            data_weight[labels == 1] = exp_weights
         if w_ref is not None:
-            sample_weight *= w_ref
+            data_weight *= w_ref
         aucs = np.array([roc_auc_score(labels, p, sample_weight=w_ref) for p in probs])
         auc_mu, auc_std = aucs.mean(), aucs.std()
 
@@ -154,6 +158,9 @@ class StepOneExperiment(TrainingExperiment):
         w_class_sim = weights[..., labels == 0]
         w_class_exp = weights[..., labels == 1]
         if self.iterating:
+            sim.w_ref_event /= (
+                sim.w_ref_event.mean()
+            )  # since we're just evaluating the classifier
             w_class_sim = w_class_sim * sim.w_ref_event[None, :].numpy()
             w_class_exp = (
                 w_class_exp * exp.w_ref_event[None, :].numpy()
@@ -172,25 +179,25 @@ class StepOneExperiment(TrainingExperiment):
 
         # exact weights
         self.log.info("Calculating exact weights")
-        # exact_break_weights_exp = exp.analytical_per_split_log_weight.exp()
-        # exact_break_weights_sim = sim.analytical_per_split_log_weight.exp()
+        # exact_break_weights_exp = exp.exact_split_logweights.exp()
+        # exact_break_weights_sim = sim.exact_split_logweights.exp()
         exact_event_weights_exp = (
-            (exp.analytical_per_split_log_weight * accepted_exp).sum(1).exp()
+            (exp.exact_split_logweights * accepted_exp).sum(1).exp()
         ) * np.exp(self.cfg.dataset.log_acc_sim - self.cfg.dataset.log_acc_exp)
         exact_event_weights_sim = (
-            (sim.analytical_per_split_log_weight * accepted_sim).sum(1).exp()
+            (sim.exact_split_logweights * accepted_sim).sum(1).exp()
         ) * np.exp(self.cfg.dataset.log_acc_sim - self.cfg.dataset.log_acc_exp)
         exact_history_weights_exp = (
-            (exp.analytical_per_split_log_weight * is_break_exp).sum(1).exp()
+            (exp.exact_split_logweights * is_break_exp).sum(1).exp()
         )
         exact_history_weights_sim = (
-            (sim.analytical_per_split_log_weight * is_break_sim).sum(1).exp()
+            (sim.exact_split_logweights * is_break_sim).sum(1).exp()
         )
 
         # observables
         self.log.info("Plotting event observables")
-        obs_exp = exp.hadrons_obs_only.nan_to_num().numpy()
-        obs_sim = sim.hadrons_obs_only.nan_to_num().numpy()
+        obs_exp = exp.observables.nan_to_num().numpy()
+        obs_sim = sim.observables.nan_to_num().numpy()
         with PdfPages(os.path.join(savedir, f"observables.pdf")) as pdf:
             for i in range(13):
                 fig, ax = plotting.plot_reweighting(
@@ -355,8 +362,8 @@ class StepOneExperiment(TrainingExperiment):
         # fragmentation
         with PdfPages(os.path.join(savedir, f"fragmentation.pdf")) as pdf:
 
-            frg_exp = exp.splits_for_full_hadron_info.numpy()
-            frg_sim = sim.splits_for_full_hadron_info.numpy()
+            frg_exp = exp.breaks.numpy()
+            frg_sim = sim.breaks.numpy()
 
             apply_mask = lambda w, m: np.expand_dims(w, 1).T.repeat(100, 1)[m].T
 
@@ -431,7 +438,6 @@ class StepOneExperiment(TrainingExperiment):
             # probabilities
             self.log.info("Plotting classifier probabilities")
             fig, ax = plt.subplots(figsize=np.array([1, 5 / 6]) * pw / 3)
-            # auc = roc_auc_score(labels, probs, samle_weights=sample_weights)
             bins = np.linspace(0, 1, pcfg.num_bins)
             plotting.add_histogram(
                 ax,

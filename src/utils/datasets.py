@@ -7,13 +7,12 @@ from tensordict import tensorclass
 from typing import List, Optional
 
 KEYS = (
-    "analytical_log_weight",
-    "hadrons_obs_only",
-    "history_indexes",
-    "splits_for_full_hadron_info",
+    "observables",
+    "breaks",
     "point_cloud",
-    "analytical_per_split_log_weight",
-    "sample_weights",
+    "exact_split_logweights",
+    "history_indices",
+    "data_weights",
 )
 
 
@@ -22,42 +21,40 @@ class HomerData:
     """
     A tensorclass holding hadronization data for the HOMER method.
     The optional attributes are
-        - "analytical_log_weight"           (N_events,):                  TODO: Description
-        - "hadrons_obs_only"                (N_events, 13):               TODO: Description
-        - "history_indexes"                 (N_events, 100):              TODO: Description
-        - "splits_for_full_hadron_info"     (N_events, 100, 13):          TODO: Description
-        - "point_cloud"                     (N_events, 60, 5):            TODO: Description
-        - "analytical_per_split_log_weight" (N_events, 100):              TODO: Description
+        - "observables"            (N_events, 13):               TODO: Description
+        - "breaks"                 (N_events, 100, 13):          TODO: Description
+        - "point_cloud"            (N_events, 60, 5):            TODO: Description
+        - "exact_split_logweights" (N_events, 100):              TODO: Description
+        - "history_indices"        (N_events, 100):              TODO: Description
     The following attributes are placeholders, filled internally by HOMER.
-        - "labels"                          (N_events, 1):                TODO: Description
-        - "is_break"                        (N_events, 100):              TODO: Description
-        - "accepted"                        (N_events, 100):              TODO: Description
-        - "num_rej"                         (N_events,):                  TODO: Description
-        - "in_chain_n"                      (N_events, 100, max_num_rej)  TODO: Description
-        - "w_class"                         (N_events,):                  TODO: Description
-        - "w_ref_break"                     (N_events, 100):              TODO: Description
-        - "w_ref_chain"                     (N_events,):                  TODO: Description
-        - "w_ref_history"                   (N_events,):                  TODO: Description
-        - "w_ref_event"                     (N_events,):                  TODO: Description
-        - "sample_weights"                  (N_events,):                  TODO: Description
+        - "labels"                 (N_events, 1):                TODO: Description
+        - "is_break"               (N_events, 100):              TODO: Description
+        - "accepted"               (N_events, 100):              TODO: Description
+        - "num_rej"                (N_events,):                  TODO: Description
+        - "in_chain_n"             (N_events, 100, max_num_rej)  TODO: Description
+        - "w_class"                (N_events,):                  TODO: Description
+        - "w_ref_break"            (N_events, 100):              TODO: Description
+        - "w_ref_chain"            (N_events,):                  TODO: Description
+        - "w_ref_history"          (N_events,):                  TODO: Description
+        - "w_ref_event"            (N_events,):                  TODO: Description
+        - "data_weights"           (N_events,):                  TODO: Description
     """
 
     # fmt: off
-    analytical_log_weight:           Optional[torch.Tensor] = None
-    hadrons_obs_only:                Optional[torch.Tensor] = None
-    history_indexes:                 Optional[torch.Tensor] = None
-    splits_for_full_hadron_info:     Optional[torch.Tensor] = None
-    point_cloud:                     Optional[torch.Tensor] = None
-    analytical_per_split_log_weight: Optional[torch.Tensor] = None
-    labels:                          Optional[torch.Tensor] = None
-    is_break:                        Optional[torch.Tensor] = None
-    accepted:                        Optional[torch.Tensor] = None
-    num_rej:                         Optional[torch.Tensor] = None
-    in_chain_n:                      Optional[torch.Tensor] = None
-    w_class:                         Optional[torch.Tensor] = None
-    w_ref_break:                     Optional[torch.Tensor] = None
-    w_ref_event:                     Optional[torch.Tensor] = None
-    sample_weights:                  Optional[torch.Tensor] = None
+    observables:            Optional[torch.Tensor] = None
+    breaks:                 Optional[torch.Tensor] = None
+    point_cloud:            Optional[torch.Tensor] = None
+    exact_split_logweights: Optional[torch.Tensor] = None
+    history_indices:        Optional[torch.Tensor] = None
+    labels:                 Optional[torch.Tensor] = None
+    is_break:               Optional[torch.Tensor] = None
+    accepted:               Optional[torch.Tensor] = None
+    num_rej:                Optional[torch.Tensor] = None
+    in_chain_n:             Optional[torch.Tensor] = None
+    w_class:                Optional[torch.Tensor] = None
+    w_ref_break:            Optional[torch.Tensor] = None
+    w_ref_event:            Optional[torch.Tensor] = None
+    data_weights:           Optional[torch.Tensor] = None
     # fmt: on
 
     @classmethod
@@ -73,9 +70,9 @@ class HomerData:
 
         # check keys
         keys = resolve_keys(keys)
-        
-        # always inlcude sample weights
-        keys.append("sample_weights")
+
+        # always inlcude data weights
+        keys.append("data_weights")
 
         # read tensors into memory
         tensor_kwargs = {}
@@ -85,11 +82,11 @@ class HomerData:
                 filename = os.path.join(path, k + ".npy")
                 array = np.load(filename)[:num]
                 tensor_kwargs[k] = torch.from_numpy(array)
-            
+
             except FileNotFoundError as e:
-            
-                if k == "sample_weights":
-                    tensor_kwargs["sample_weights"] = torch.ones(len(array))
+
+                if k == "data_weights":
+                    tensor_kwargs["data_weights"] = torch.ones(len(array))
                 else:
                     raise e
 
@@ -113,9 +110,7 @@ class HomerData:
             else:
                 w_ref_break = torch.from_numpy(record["break_weights"]).mean(0)
                 w_ref_event = torch.from_numpy(record["event_weights"]).mean(0)
-
-                # fix normalization (only affects training, not final output)
-                w_ref_event /= w_ref_event.mean()
+                # NOTE: Normalizations not enforced. Adjust during training
 
             tensor_kwargs["w_ref_break"] = w_ref_break.nan_to_num(1.0)
             tensor_kwargs["w_ref_event"] = w_ref_event

@@ -2,14 +2,13 @@ import os
 import torch
 import torch.nn.functional as F
 
-from hydra.utils import call, instantiate
+from hydra.utils import instantiate
 from omegaconf import DictConfig
 
 from .base_model import Model
 from .classifier import Classifier
 from src.utils.datasets import HomerData
 from src.utils.config import get_prev_config
-from src.utils.utils import load_model
 
 
 class Factorizer(Model):
@@ -21,7 +20,6 @@ class Factorizer(Model):
         self.net2 = instantiate(cfg.net2)
         self.log_acc_sim = cfg.dataset.log_acc_sim
         self.learn_acc = cfg.learn_acc
-        self.learn_var = cfg.learn_var
         self.smear = cfg.smear
         self.iterate_target = cfg.iterate_target
 
@@ -32,15 +30,11 @@ class Factorizer(Model):
 
     def batch_loss(self, batch: HomerData) -> torch.Tensor:
 
-        # rename variables
-        s = batch.splits_for_full_hadron_info  # (batch_size, breaks, channels)
-        W = batch.w_class  # (batch_size,)
-
         if self.iterate_target and batch.w_ref_event is not None:
-            W = W * batch.w_ref_event
+            batch.w_class *= batch.w_ref_event
 
         # forward pass
-        g1, g2 = self.forward(s)
+        g1, g2 = self.forward(batch.breaks)
         log_w = g1 - g2
         log_W = (log_w * batch.accepted).sum(1)
 
@@ -48,9 +42,7 @@ class Factorizer(Model):
             # calculate acceptance efficiencies (w/ correction due to iterations)
             log_acc_sim = self.log_acc_sim
             if not self.iterate_target and batch.w_ref_break is not None:
-                log_w_sample = batch.w_ref_break.log().nan_to_num(
-                    1.0
-                )  # TODO: Move to dataset initialization to avoid sync. Also log_w should be nan -> 0.
+                log_w_sample = batch.w_ref_break.log()
                 # correct a_inf
                 log_w = log_w + log_w_sample
                 # correct a_sim
@@ -63,14 +55,15 @@ class Factorizer(Model):
 
         if self.smear:
             # smear weights with feature-space distances
-            x = batch.hadrons_obs_only  # (batch, features)
+            x = batch.observables  # (batch, features)
             chain_weights = self.smearing_kernel.log_prob(torch.cdist(x, x)).exp()
             log_W = (chain_weights @ log_W.exp()).log() - chain_weights.sum(1).log()
 
-        # L_C
-        loss_c = (W + 1) * F.softplus(-log_W) + log_W  # = -W*log(D) - log(1-D)
-        # L_12
-        loss_12 = (g1.exp() + 1) * F.softplus(-g2) + g2  # = -exp(g1)*log(G) - log(1-G)
+        # L_C (BCE)
+        loss_c = (batch.w_class + 1) * F.softplus(-log_W) + log_W
+
+        # L_12 (BCE)
+        loss_12 = (g1.exp() + 1) * F.softplus(-g2) + g2
 
         # include sample weights
         if not self.iterate_target and batch.w_ref_event is not None:
@@ -91,10 +84,8 @@ class Factorizer(Model):
         with torch.no_grad():
             self.log_scalar(loss_c, "loss_c")
             self.log_scalar(loss_12, "loss_12")
-            self.log_scalar((g1 * batch.accepted).sum(1).mean(0), "g1_acc")
-            self.log_scalar((g2 * batch.accepted).sum(1).mean(0), "g2_acc")
-            self.log_scalar((g1 * batch.is_break).sum(1).mean(0), "g1_all")
-            self.log_scalar((g2 * batch.is_break).sum(1).mean(0), "g2_all")
+            self.log_scalar((g1 * batch.is_break).sum(1).mean(0), "g1")
+            self.log_scalar((g2 * batch.is_break).sum(1).mean(0), "g2")
 
             if self.learn_acc:
                 self.log_scalar(acc_inf, "acc_inf")
@@ -178,53 +169,51 @@ class UncertaintiesFactorizer(Factorizer):
                 self.classifier.reseed()
 
             # call classifier
-            ln_W_target = self.classifier(
-                batch
-            )  # TODO: problematic for pointcloud classifier with different preprocessing?
+            # TODO: problematic for pointcloud classifier with different preprocessing
+            target = self.classifier(batch)
 
-            # incorporate reference weight into normalization and/or target
+            # get total ref to data weight
+            logw_total = target.clone()
             if batch.w_ref_event is not None:
-                # get total ref to data weight
-                ln_W_total = ln_W_target + batch.w_ref_event.log()
+                # add reference weight to target
+                logw_total += batch.w_ref_event.log()
                 if self.iterate_target:
-                    ln_W_target = ln_W_total
-                ln_W_norm = ln_W_total
-            else:
-                ln_W_norm = ln_W_target
+                    target = logw_total
 
             # correct target normalization
-            ln_W_target -= ln_W_norm.exp().mean().log()
+            if self.cfg.norm_target:
+                target -= logw_total.exp().mean().log()
 
         # rename variables
-        s = batch.splits_for_full_hadron_info
+        s = batch.breaks
         accepted = batch.accepted
 
         # forward pass: mean and logvar of break-level log weight
-        mu_ln_w, logvar_ln_w = self.forward(s).unbind(-1)
-        logvar_ln_w = logvar_ln_w.clamp(-20, 10)
+        logw_s, logvar_logw_s = self.forward(s).unbind(-1)
+        logvar_logw_s = logvar_logw_s.clamp(-20, 10)
 
         # combine into mu, var at chain level
-        mu_ln_W = (mu_ln_w * accepted).sum(1)  # sum of means
-        var_ln_W = (logvar_ln_w.exp() * accepted).sum(1)  # sum of variances
+        logw_S = (logw_s * accepted).sum(1)  # sum of means
+        var_logw_S = (logvar_logw_s.exp() * accepted).sum(1)  # sum of variances
 
         if self.learn_acc:
             # calculate acceptance efficiencies (w/ correction due to iterations)
             log_acc_sim = self.log_acc_sim
             if not self.iterate_target and batch.w_ref_break is not None:
-                log_w_sample = batch.w_ref_break.log()
+                log_w_ref = batch.w_ref_break.log()
                 # correct a_inf
-                mu_ln_w = mu_ln_w + log_w_sample
+                logw_s = logw_s + log_w_ref
                 # correct a_sim
                 acc_sim = self.inferred_acceptance(
-                    log_w_sample, batch.num_rej, batch.in_chain_n
+                    log_w_ref, batch.num_rej, batch.in_chain_n
                 )
                 log_acc_sim = acc_sim.log()
-            acc_inf = self.inferred_acceptance(mu_ln_w, batch.num_rej, batch.in_chain_n)
+            acc_inf = self.inferred_acceptance(logw_s, batch.num_rej, batch.in_chain_n)
             # correct event weight
-            mu_ln_W = mu_ln_W + log_acc_sim - acc_inf.log()
+            logw_S = logw_S + log_acc_sim - acc_inf.log()
 
         # Gaussian likelihood loss
-        loss = F.gaussian_nll_loss(ln_W_target, mu_ln_W, var_ln_W, reduction="none")
+        loss = F.gaussian_nll_loss(target, logw_S, var_logw_S, reduction="none")
 
         if not self.iterate_target and batch.w_ref_break is not None:
             loss = loss * batch.w_ref_event
@@ -238,13 +227,12 @@ class UncertaintiesFactorizer(Factorizer):
         # tensorboard logging
         with torch.no_grad():
             self.log_scalar(loss, "nll")
-            self.log_scalar(mu_ln_W.mean(0), "mu_ln_W")
-            self.log_scalar(var_ln_W.mean(0), "var_ln_W")
+            self.log_scalar(logw_S.mean(0), "logw_S")
+            self.log_scalar(var_logw_S.mean(0), "var_logw_S")
+            self.log_scalar((logw_s * accepted).sum() / accepted.int().sum(), "logw_s")
             self.log_scalar(
-                (mu_ln_w * accepted).sum() / accepted.int().sum(), "mu_ln_w"
-            )
-            self.log_scalar(
-                (logvar_ln_w.exp() * accepted).sum() / accepted.int().sum(), "var_ln_w"
+                (logvar_logw_s.exp() * accepted).sum() / accepted.int().sum(),
+                "var_ln_w",
             )
             if self.learn_acc:
                 self.log_scalar(acc_inf, "acc_inf")
@@ -258,9 +246,6 @@ class UncertaintiesFactorizer(Factorizer):
         mu = self.net(s[..., :5])
         logvar = self.net2(s[..., :5])
 
-        # don't
-        # mu = self.net(s[..., :7])
-        # logvar = self.net2(s[..., :7])
         return torch.cat([mu, logvar], -1)
 
     def log_break_weight(self, s: torch.Tensor) -> torch.Tensor:
