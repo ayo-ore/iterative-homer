@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+# A setup script for ease of use on a cluster.
+
 # project directory
 export HOMER_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 

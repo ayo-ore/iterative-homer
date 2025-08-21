@@ -118,8 +118,8 @@ class StepOneExperiment(TrainingExperiment):
         plot_keys = [
             "observables",
             "history_indices",
-            "splits",
-            "exact_split_logweights",
+            "breaks",
+            "exact_break_logweights",
         ]
         exp = HomerData.from_dir(
             path=self.cfg.data.path_exp_test,
