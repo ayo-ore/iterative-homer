@@ -545,3 +545,26 @@ def plot_syst_calibration(
     fig.tight_layout(pad=0.2)
 
     return fig, ax
+
+def plot_classifier_calibration(probs, labels, sample_weights, num_bins):
+    bins_calib = np.linspace(*np.quantile(probs, (5e-3, 1-5e-3)), num_bins)
+    
+    norm = binned_statistic(probs, sample_weights, statistic="sum", bins=bins_calib)[0]
+    expected = binned_statistic(probs, probs*sample_weights, statistic="sum", bins=bins_calib)[0]/norm
+    observed = binned_statistic(probs, labels*sample_weights, statistic="sum", bins=bins_calib)[0]/norm
+    err_obs = np.sqrt(binned_statistic(probs, sample_weights**2, statistic="sum", bins=bins_calib)[0])/norm    
+
+    fig, ax = plt.subplots(figsize=(9.8/2, 4))
+    ax.plot(expected, observed)
+    ax.fill_between(expected, observed-err_obs, observed+err_obs, alpha=0.2)
+    lim = max(abs(e-0.5) for e in (*ax.get_xlim(), *ax.get_xlim()))
+    ax.plot([0, 1], [0, 1], color=BLACK, ls='--', lw=1, zorder=-1)
+    ax.plot([0, 1], [0.5, 0.5], color=BLACK, ls='--', lw=1, zorder=-1)
+    ax.set_xlim(0.5-lim, 0.5+lim)
+    ax.set_ylim(0.5-lim, 0.5+lim)
+    ax.set_aspect(1)
+
+    ax.set_xlabel("Predicted frequency")
+    ax.set_ylabel("Observed frequency")
+
+    return fig, ax

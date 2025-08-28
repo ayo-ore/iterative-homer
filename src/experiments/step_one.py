@@ -37,14 +37,12 @@ class StepOneExperiment(TrainingExperiment):
     def init_dataset(self, path_exp, path_sim):
 
         # read data
-        # data_device = self.device if self.cfg.data.on_gpu else torch.device("cpu")
         dset_exp, dset_sim = [
             HomerData.from_dir(
                 path=p,
                 num=self.cfg.data.num,
                 w_prev_path=self.cfg.w_prev_path,
                 keys=self.train_keys,
-                # device=data_device,
             )
             for p in (path_exp, path_sim)
         ]
@@ -57,7 +55,7 @@ class StepOneExperiment(TrainingExperiment):
         dset = torch.cat([dset_exp, dset_sim], dim=0).to(self.dtype)
 
         # create labels
-        dset.labels = torch.zeros(len(dset), dtype=dset.dtype)  # , device=data_device)
+        dset.labels = torch.zeros(len(dset), dtype=dset.dtype)
         dset.labels[: len(dset_exp)] = 1
 
         return dset
@@ -149,22 +147,20 @@ class StepOneExperiment(TrainingExperiment):
             data_weight[labels == 1] = exp_weights
         if w_ref is not None:
             data_weight *= w_ref
-        aucs = np.array([roc_auc_score(labels, p, sample_weight=data_weight) for p in probs])
+        aucs = np.array(
+            [roc_auc_score(labels, p, sample_weight=data_weight) for p in probs]
+        )
         auc_mu, auc_std = aucs.mean(), aucs.std()
 
         probs = probs.mean(0)
 
         # extract classifier weights
         w_class_sim = weights[..., labels == 0]
-        w_class_exp = weights[..., labels == 1]
         if self.iterating:
             sim.w_ref_event /= (
                 sim.w_ref_event.mean()
             )  # since we're just evaluating the classifier
             w_class_sim = w_class_sim * sim.w_ref_event[None, :].numpy()
-            w_class_exp = (
-                w_class_exp * exp.w_ref_event[None, :].numpy()
-            )  # TODO: Is this doing anything? Perhaps need to pull it again from scratch
 
         # get masks
         self.log.info("Constructing masks")
@@ -448,7 +444,12 @@ class StepOneExperiment(TrainingExperiment):
                 weights=exp_weights,
             )
             plotting.add_histogram(
-                ax, probs[labels == 0], bins=bins, label="Sim", color="C1"
+                ax,
+                probs[labels == 0],
+                bins=bins,
+                label="Sim",
+                color="C1",
+                weights=w_ref,
             )
             ax.legend(frameon=False, handlelength=1.4)
             ax.set_xlabel("Predicted probability")
@@ -469,13 +470,7 @@ class StepOneExperiment(TrainingExperiment):
 
             # calibration
             self.log.info("Plotting classifier calibration")
-            fig, ax = plt.subplots(figsize=np.array([1, 5 / 6]) * pw / 3)
-            probs_true, probs_pred = calibration_curve(labels, probs, n_bins=50)
-            ax.plot(probs_true, probs_true, "k")
-            ax.plot(probs_true, probs_pred)
-            ax.set_xlabel("True frequency")
-            ax.set_ylabel("Predicted frequency")
-            fig.subplots_adjust(top=0.91, bottom=0.2, left=0.22, right=0.96)
+            fig, ax = plotting.plot_classifier_calibration(probs, labels, data_weight, num_bins=50)
             pdf.savefig(fig)
             plt.close(fig)
 
