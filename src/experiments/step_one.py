@@ -149,7 +149,7 @@ class StepOneExperiment(TrainingExperiment):
             data_weight[labels == 1] = exp_weights
         if w_ref is not None:
             data_weight *= w_ref
-        aucs = np.array([roc_auc_score(labels, p, sample_weight=w_ref) for p in probs])
+        aucs = np.array([roc_auc_score(labels, p, sample_weight=data_weight) for p in probs])
         auc_mu, auc_std = aucs.mean(), aucs.std()
 
         probs = probs.mean(0)
