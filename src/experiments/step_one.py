@@ -449,7 +449,7 @@ class StepOneExperiment(TrainingExperiment):
                 bins=bins,
                 label="Sim",
                 color="C1",
-                weights=w_ref,
+                weights=w_ref[labels == 0],
             )
             ax.legend(frameon=False, handlelength=1.4)
             ax.set_xlabel("Predicted probability")
