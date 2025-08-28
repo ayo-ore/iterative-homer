@@ -179,19 +179,19 @@ class StepOneExperiment(TrainingExperiment):
 
         # exact weights
         self.log.info("Calculating exact weights")
-        # exact_break_weights_exp = exp.exact_split_logweights.exp()
-        # exact_break_weights_sim = sim.exact_split_logweights.exp()
+        # exact_break_weights_exp = exp.exact_break_logweights.exp()
+        # exact_break_weights_sim = sim.exact_break_logweights.exp()
         exact_event_weights_exp = (
-            (exp.exact_split_logweights * accepted_exp).sum(1).exp()
+            (exp.exact_break_logweights * accepted_exp).sum(1).exp()
         ) * np.exp(self.cfg.dataset.log_acc_sim - self.cfg.dataset.log_acc_exp)
         exact_event_weights_sim = (
-            (sim.exact_split_logweights * accepted_sim).sum(1).exp()
+            (sim.exact_break_logweights * accepted_sim).sum(1).exp()
         ) * np.exp(self.cfg.dataset.log_acc_sim - self.cfg.dataset.log_acc_exp)
         exact_history_weights_exp = (
-            (exp.exact_split_logweights * is_break_exp).sum(1).exp()
+            (exp.exact_break_logweights * is_break_exp).sum(1).exp()
         )
         exact_history_weights_sim = (
-            (sim.exact_split_logweights * is_break_sim).sum(1).exp()
+            (sim.exact_break_logweights * is_break_sim).sum(1).exp()
         )
 
         # observables

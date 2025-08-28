@@ -227,19 +227,19 @@ class StepTwoExperiment(TrainingExperiment):
         in_chain_n_sim = in_chain_n_sim.numpy()
 
         # compute exact weights
-        exact_break_weights_exp = exp.exact_split_logweights.exp().numpy()
-        exact_break_weights_sim = sim.exact_split_logweights.exp().numpy()
+        exact_break_weights_exp = exp.exact_break_logweights.exp().numpy()
+        exact_break_weights_sim = sim.exact_break_logweights.exp().numpy()
         exact_chain_weights_exp = torch.exp(
-            (exp.exact_split_logweights * accepted_exp).sum(1)
+            (exp.exact_break_logweights * accepted_exp).sum(1)
         ).numpy()
         exact_chain_weights_sim = torch.exp(
-            (sim.exact_split_logweights * accepted_sim).sum(1)
+            (sim.exact_break_logweights * accepted_sim).sum(1)
         ).numpy()
         exact_history_weights_exp = torch.exp(
-            (exp.exact_split_logweights * is_break_exp).sum(1)
+            (exp.exact_break_logweights * is_break_exp).sum(1)
         ).numpy()
         exact_history_weights_sim = torch.exp(
-            (sim.exact_split_logweights * is_break_sim).sum(1)
+            (sim.exact_break_logweights * is_break_sim).sum(1)
         ).numpy()
         exact_event_weights_exp = exact_chain_weights_exp * np.exp(
             self.cfg.dataset.log_acc_sim - self.cfg.dataset.log_acc_exp
