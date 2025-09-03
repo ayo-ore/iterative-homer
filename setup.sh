@@ -14,7 +14,7 @@ eval "$(conda shell.bash hook)"
 conda activate homer
 
 # auto completion
-eval "$(python main.py -sc install=bash)"
+eval "$(python homer.py -sc install=bash)"
 
 # resolve multithreading conflict
 export MKL_THREADING_LAYER=GNU

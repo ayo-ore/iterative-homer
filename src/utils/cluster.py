@@ -49,7 +49,7 @@ def get_submit_cmd_pbs(cfg, hcfg, overrides):
         cd {os.environ['HOMER_DIR']}
         source setup.sh
         export CUDA_VISIBLE_DEVICES={device}
-        python main.py -cn {hcfg.job.config_name} {' '.join(overrides)} 
+        python homer.py -cn {hcfg.job.config_name} {' '.join(overrides)} 
         exit 0
         EOT
     """
@@ -71,7 +71,7 @@ def get_submit_cmd_moab(cfg, hcfg, overrides):
         #MSUB -j oe
 	    cd {os.environ['HOMER_DIR']}
         source setup.sh
-        python main.py {' '.join(overrides)} -cn {hcfg.job.config_name}
+        python homer.py {' '.join(overrides)} -cn {hcfg.job.config_name}
         exit 0
         EOT
     """
@@ -84,7 +84,7 @@ def get_submit_cmd_slurm(cfg, hcfg, overrides):
 
     ccfg = cfg.cluster
     setup_cmd = f"cd {os.environ['HOMER_DIR']}; ./setup.sh"
-    script_cmd = f"python main.py -cn {hcfg.job.config_name} {' '.join(overrides)}"
+    script_cmd = f"python homer.py -cn {hcfg.job.config_name} {' '.join(overrides)}"
     cmd = (
         f"sbatch -p {ccfg.queue} --mem {ccfg.mem} -N 1 -c {cfg.num_cpus or 1}"
         f" --gres=gpu:{ccfg.num_gpus} -t {ccfg.time} -J homer_{cfg.run_name}"

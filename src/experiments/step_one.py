@@ -100,7 +100,7 @@ class StepOneExperiment(TrainingExperiment):
         # save to disk
         tag = "" if tag is None else f"_{tag}"
         savepath = os.path.join(self.exp_dir, f"predictions{tag}.npz")
-        self.log.info(f"Saving {tag} labels, weights and probs to {savepath}")
+        self.log.info(f"Saving {tag.lstrip('_')} labels, weights and probs to {savepath}")
         np.savez(savepath, **predictions)
 
     def plot(self):
@@ -378,6 +378,7 @@ class StepOneExperiment(TrainingExperiment):
                 density=True,
                 exp_weights=exp_weights.repeat(100).reshape(-1, 100)[is_break_exp].T,
             )
+            fig.subplots_adjust(top=0.93, bottom=0.13, left=0.16, right=0.98)
             pdf.savefig(fig)
             plt.close(fig)
 
@@ -404,6 +405,7 @@ class StepOneExperiment(TrainingExperiment):
                 density=True,
                 exp_weights=exp_weights.repeat(100).reshape(-1, 100)[mask_exp].T,
             )
+            fig.subplots_adjust(top=0.93, bottom=0.13, left=0.16, right=0.98)
             pdf.savefig(fig)
             plt.close(fig)
 

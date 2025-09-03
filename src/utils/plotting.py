@@ -554,7 +554,7 @@ def plot_classifier_calibration(probs, labels, sample_weights, num_bins):
     observed = binned_statistic(probs, labels*sample_weights, statistic="sum", bins=bins_calib)[0]/norm
     err_obs = np.sqrt(binned_statistic(probs, sample_weights**2, statistic="sum", bins=bins_calib)[0])/norm    
 
-    fig, ax = plt.subplots(figsize=(9.8/2, 4))
+    fig, ax = plt.subplots(figsize=np.array([1, 5 / 6]) * 9.6 / 3)
     ax.plot(expected, observed)
     ax.fill_between(expected, observed-err_obs, observed+err_obs, alpha=0.2)
     lim = max(abs(e-0.5) for e in (*ax.get_xlim(), *ax.get_xlim()))

@@ -272,8 +272,8 @@ class StepTwoExperiment(TrainingExperiment):
                     ],
                     variance_list=[None, event_vars, None],
                     names_list=[
-                        "(Exact Chain)",
-                        "(Infer Chain)",
+                        "Exact",
+                        r"\texttt{iHOMER}",
                         "Classifier",
                     ],
                     xlabel=pcfg.hadron_obs_labels[i],
@@ -339,8 +339,8 @@ class StepTwoExperiment(TrainingExperiment):
                     None,
                 ],
                 names_list=[
-                    "(Exact Chain)",
-                    "(Infer Chain)",
+                    "Exact",
+                    r"\texttt{iHOMER}",
                     "Classifier",
                 ],
                 xlabel=r"$-2\log w_\mathrm{exact}(S)$",
@@ -370,8 +370,8 @@ class StepTwoExperiment(TrainingExperiment):
                     None,
                 ],
                 names_list=[
-                    "(Exact History)",
-                    "(Infer History)",
+                    "Exact",
+                    r"\texttt{iHOMER}",
                     "Classifier",
                 ],
                 xlabel=r"$-2\log w_\mathrm{exact}(H)$",
@@ -409,7 +409,7 @@ class StepTwoExperiment(TrainingExperiment):
                     None,
                     None if break_vars is None else break_vars[..., is_break_sim],
                 ],
-                names_list=["Exact", "Inferred"],
+                names_list=["Exact", r"\texttt{iHOMER}"],
                 xlabel=r"$z$",
                 figsize=np.array([1, 5 / 6]) * pw / 2,
                 num_bins=40,
@@ -419,6 +419,7 @@ class StepTwoExperiment(TrainingExperiment):
                 denom_idx=2,
                 exp_weights=exp_weights.repeat(100).reshape(-1, 100)[is_break_exp].T,
             )
+            fig.subplots_adjust(top=0.93, bottom=0.13, left=0.16, right=0.98)
             pdf.savefig(fig)
             plt.close(fig)
 
@@ -453,7 +454,7 @@ class StepTwoExperiment(TrainingExperiment):
                         None,
                         None if break_vars is None else break_vars[..., mask_sim],
                     ],
-                    names_list=["Exact", "Inferred"],
+                    names_list=["Exact", r"\texttt{iHOMER}"],
                     xlabel=r"$z$",
                     title=rf"{lo:.3f} < $m_T^2$ < {hi:.3f}",
                     figsize=np.array([1, 5 / 6]) * pw / 2,
@@ -463,6 +464,7 @@ class StepTwoExperiment(TrainingExperiment):
                     denom_idx=2,
                     exp_weights=exp_weights.repeat(100).reshape(-1, 100)[mask_exp].T,
                 )
+                fig.subplots_adjust(top=0.93, bottom=0.13, left=0.16, right=0.98)
                 pdf.savefig(fig)
                 plt.close(fig)
 
@@ -478,7 +480,7 @@ class StepTwoExperiment(TrainingExperiment):
                     None,
                     None if break_vars is None else break_vars[..., is_break_sim],
                 ],
-                names_list=["Exact", "Inferred"],
+                names_list=["Exact", r"\texttt{iHOMER}"],
                 xlabel=r"$m_T$",
                 figsize=np.array([1, 5 / 6]) * pw / 2,
                 num_bins=40,
@@ -488,6 +490,7 @@ class StepTwoExperiment(TrainingExperiment):
                 denom_idx=2,
                 exp_weights=exp_weights.repeat(100).reshape(-1, 100)[is_break_exp].T,
             )
+            fig.subplots_adjust(top=0.93, bottom=0.13, left=0.16, right=0.98)
             pdf.savefig(fig)
             plt.close(fig)
 
@@ -520,7 +523,7 @@ class StepTwoExperiment(TrainingExperiment):
                         None,
                         None if break_vars is None else break_vars[..., mask_sim],
                     ],
-                    names_list=["Exact", "Inferred"],
+                    names_list=["Exact", r"\texttt{iHOMER}"],
                     xlabel=r"$m_T$",
                     title=rf"{lo:.3f} < $z$ < {hi:.3f}",
                     figsize=np.array([1, 5 / 6]) * pw / 2,
@@ -530,6 +533,7 @@ class StepTwoExperiment(TrainingExperiment):
                     denom_idx=2,
                     exp_weights=exp_weights.repeat(100).reshape(-1, 100)[mask_exp].T,
                 )
+                fig.subplots_adjust(top=0.93, bottom=0.13, left=0.16, right=0.98)
                 pdf.savefig(fig)
                 plt.close(fig)
 
@@ -823,7 +827,7 @@ class StepTwoExperiment(TrainingExperiment):
                 event_weights, w_class_sim, bins=bins, cmap="Blues", rasterized=True
             )
             ax.set_ylabel("Classifier weight")
-            ax.set_xlabel("Inferred weight")
+            ax.set_xlabel(r"\texttt{iHOMER} event weight")
 
             ax.semilogx()
             ax.semilogy()
@@ -846,7 +850,7 @@ class StepTwoExperiment(TrainingExperiment):
                 rasterized=True,
             )
             ax.set_ylabel("Exact event weight")
-            ax.set_xlabel("Inferred event weight")
+            ax.set_xlabel(r"\texttt{iHOMER} event weight")
 
             ax.semilogx()
             ax.semilogy()
@@ -869,7 +873,7 @@ class StepTwoExperiment(TrainingExperiment):
                 rasterized=True,
             )
             ax.set_ylabel("Exact history weight")
-            ax.set_xlabel("Inferred history weight")
+            ax.set_xlabel(r"\texttt{iHOMER} history weight")
 
             ax.semilogx()
             ax.semilogy()
@@ -888,7 +892,7 @@ class StepTwoExperiment(TrainingExperiment):
                 homer_weights, w_class_sim, bins=bins, cmap="Blues", rasterized=True
             )
             ax.set_ylabel("Classifier weight")
-            ax.set_xlabel("Homer weight")
+            ax.set_xlabel(r"\texttt{iHOMER} history weight")
 
             ax.semilogx()
             ax.semilogy()
