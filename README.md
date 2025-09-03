@@ -1,8 +1,7 @@
 # Iterative HOMER with Uncertainties
 
-This repository is a standalone implementation of the HOMER method for reweighting hadronization histories [[2410.06342]](https://arxiv.org/abs/2410.06342), including iterations and learned uncertainties. The original codebase, which contains data generation scripts can be found at the [MLHad GitLab](https://gitlab.com/uchep/mlhad/-/tree/master/HOMER?ref_type=heads).
+This repository implements [iHOMER](https://arxiv.org/abs/2509.XXXXX), a method for reweighting hadronization histories that extends [HOMER](https://arxiv.org/abs/2410.06342) with iterations and learned uncertainties. The original codebase, which contains data generation scripts can be found at the [MLHad GitLab](https://gitlab.com/uchep/mlhad/-/tree/master/HOMER?ref_type=heads).
 
-**Cite:**
 
 ## Getting started
 - Clone the repository
