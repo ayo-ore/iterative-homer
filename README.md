@@ -13,15 +13,15 @@ conda env create -f env.yaml
 ## Basic usage
 This project uses [Hydra](https://hydra.cc/docs/intro/) to configure experiments. The default settings are given in `config/default.yaml` and each can be overridden via the command line.
 
-The script `homer.py` is used to run experiments, which typically consist of training/evaluating a model, as well as making plots. The all-in-one `IterativeExperiment` runs steps 1 and 2 of the HOMER method in iterations. To launch the experiment with default settings, simply use:
+The script `homer.py` is used to run experiments, which typically consist of training/evaluating a model, as well as making plots. The all-in-one `IterativeExperiment` runs steps 1 and 2 of the HOMER method in iterations. To launch the experiment with default settings (without uncertainties), simply use:
 ```
 python homer.py -cn iterative
 ```
 In the above, `-cn` is short for `--config_name`.
 
-Experiment settings can be adjusted from the command line. For example, to set the number of iterations to 3, use:
+Experiment settings can be adjusted from the command line. For example, to set the number of iterations to 3 and train with uncertainties, use:
 ```
-python homer.py -cn iterative iterations=3
+python homer.py -cn iterative iterations=3 step_one.bayesian=True step_two=uncertainties
 ```
 Each step of HOMER can also be run in isolation:
 ```
