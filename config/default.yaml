@@ -15,7 +15,7 @@ run_dir: runs
 
 prev_exp_dir: null
 w_prev_path: null
-num_bnn_samples: null
+num_bnn_samples: 10
 
 data:
   num: -1

@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from functools import partial
 from itertools import pairwise
 from typing import Optional
 
@@ -18,6 +19,7 @@ class MLP(nn.Module):
         out_act: Optional[str] = None,
         drop: float = 0.0,
         bayesian: bool = False,
+        bayesian_prior_prec: float = 1.0,
     ):
 
         super().__init__()
@@ -25,7 +27,11 @@ class MLP(nn.Module):
         units = [dim_in, *(num_hidden_layers * [hidden_channels]), dim_out]
 
         self.bayesian = bayesian
-        linear_layer = BayesianLinear if bayesian else nn.Linear
+        linear_layer = (
+            partial(BayesianLinear, prior_prec=bayesian_prior_prec)
+            if bayesian
+            else nn.Linear
+        )
         self.linear_layers = nn.ModuleList(
             [linear_layer(a, b) for a, b in pairwise(units)]
         )
